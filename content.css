@@ -1,3 +1,151 @@
+/* RohlikHealth — In-page Panel */
+
+#rh-panel {
+  position: fixed;
+  top: 80px;
+  right: -260px;
+  width: 240px;
+  background: #fff;
+  border-radius: 12px 0 0 12px;
+  box-shadow: -4px 0 20px rgba(0,0,0,0.15);
+  z-index: 2147483647;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  font-size: 13px;
+  color: #222;
+  transition: right 0.25s ease;
+  border: 1px solid #e5e5e5;
+  border-right: none;
+}
+
+#rh-panel.rh-panel-open {
+  right: 0;
+}
+
+#rh-panel-header {
+  background: linear-gradient(135deg, #038141, #85bb2f);
+  padding: 12px 14px;
+  color: #fff;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  border-radius: 12px 0 0 0;
+}
+
+#rh-panel-logo {
+  width: 30px;
+  height: 30px;
+  background: rgba(255,255,255,0.25);
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 15px;
+  font-weight: 900;
+  flex-shrink: 0;
+}
+
+#rh-panel-title { font-size: 14px; font-weight: 700; line-height: 1.2; }
+#rh-panel-sub   { font-size: 11px; opacity: 0.85; }
+
+#rh-panel-close {
+  margin-left: auto;
+  background: none;
+  border: none;
+  color: rgba(255,255,255,0.8);
+  font-size: 16px;
+  cursor: pointer;
+  padding: 0 2px;
+  line-height: 1;
+}
+#rh-panel-close:hover { color: #fff; }
+
+#rh-panel-body   { padding: 14px; }
+#rh-panel-footer {
+  padding: 8px 14px;
+  border-top: 1px solid #eee;
+  font-size: 10px;
+  color: #aaa;
+  text-align: center;
+  border-radius: 0 0 0 12px;
+}
+#rh-panel-footer a { color: #038141; text-decoration: none; }
+
+.rh-panel-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 12px;
+}
+.rh-panel-label { font-weight: 600; }
+
+#rh-panel-stats {
+  background: #f5f5f5;
+  border-radius: 8px;
+  padding: 8px 12px;
+  margin-bottom: 12px;
+  font-size: 12px;
+  color: #555;
+}
+#rh-panel-stats strong {
+  display: block;
+  font-size: 22px;
+  font-weight: 800;
+  color: #038141;
+  line-height: 1;
+  margin-bottom: 2px;
+}
+
+#rh-panel-legend {
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 12px;
+}
+.rh-leg-item  { display: flex; flex-direction: column; align-items: center; }
+.rh-leg-badge {
+  width: 26px; height: 26px;
+  border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  font-weight: 800; font-size: 13px; color: #fff;
+}
+
+#rh-panel-clear {
+  width: 100%;
+  padding: 8px;
+  background: #f0f0f0;
+  border: none;
+  border-radius: 6px;
+  font-size: 12px;
+  color: #555;
+  cursor: pointer;
+}
+#rh-panel-clear:hover { background: #e0e0e0; }
+
+#rh-panel-msg {
+  font-size: 11px;
+  color: #038141;
+  text-align: center;
+  min-height: 16px;
+  margin-top: 6px;
+}
+
+/* Toggle switch (reused from popup) */
+.rh-toggle          { position: relative; width: 40px; height: 22px; }
+.rh-toggle input    { opacity: 0; width: 0; height: 0; }
+.rh-toggle-slider   {
+  position: absolute; inset: 0;
+  background: #ccc; border-radius: 11px; cursor: pointer;
+  transition: background 0.2s;
+}
+.rh-toggle-slider:before {
+  content: ''; position: absolute;
+  width: 16px; height: 16px; left: 3px; top: 3px;
+  background: #fff; border-radius: 50%;
+  transition: transform 0.2s;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.2);
+}
+.rh-toggle input:checked + .rh-toggle-slider           { background: #038141; }
+.rh-toggle input:checked + .rh-toggle-slider:before    { transform: translateX(18px); }
+
 /* RohlikHealth — Badge & Tooltip Styles */
 
 .rh-badge {

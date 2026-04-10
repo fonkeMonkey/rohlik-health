@@ -446,6 +446,12 @@ function processQueue() {
   }
 }
 
+chrome.action.onClicked.addListener((tab) => {
+  if (tab.url?.includes('rohlik.cz')) {
+    chrome.tabs.sendMessage(tab.id, { type: 'TOGGLE_PANEL' });
+  }
+});
+
 chrome.runtime.onMessage.addListener((msg, _sender, sendResponse) => {
   if (msg.type === 'GET_RATING') {
     new Promise(resolve => {

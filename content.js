@@ -274,11 +274,82 @@ observer.observe(document.body, {
   attributes: false,
 });
 
-// Handle messages from popup
+// ── In-page panel ────────────────────────────────────────────────────────────
+
+let panel = null;
+
+function buildPanel() {
+  const el = document.createElement('div');
+  el.id = 'rh-panel';
+  el.innerHTML = `
+    <div id="rh-panel-header">
+      <span id="rh-panel-logo">H</span>
+      <div>
+        <div id="rh-panel-title">RohlikHealth</div>
+        <div id="rh-panel-sub">Nutri-Score ratings</div>
+      </div>
+      <button id="rh-panel-close">✕</button>
+    </div>
+    <div id="rh-panel-body">
+      <div class="rh-panel-row">
+        <span class="rh-panel-label">Show ratings</span>
+        <label class="rh-toggle">
+          <input type="checkbox" id="rh-panel-toggle" checked>
+          <span class="rh-toggle-slider"></span>
+        </label>
+      </div>
+      <div id="rh-panel-stats"><strong id="rh-panel-count">0</strong> products rated on this page</div>
+      <div id="rh-panel-legend">
+        ${['A','B','C','D','E'].map(s => `<div class="rh-leg-item"><div class="rh-leg-badge rh-score-${s.toLowerCase()}">${s}</div></div>`).join('')}
+      </div>
+      <button id="rh-panel-clear">Clear rating cache</button>
+      <div id="rh-panel-msg"></div>
+    </div>
+    <div id="rh-panel-footer">Data from <a href="https://world.openfoodfacts.org" target="_blank">Open Food Facts</a></div>
+  `;
+  document.body.appendChild(el);
+
+  // populate count
+  el.querySelector('#rh-panel-count').textContent =
+    document.querySelectorAll(`[${PROCESSED_ATTR}="done"]`).length;
+
+  // toggle
+  const tog = el.querySelector('#rh-panel-toggle');
+  chrome.storage.local.get('rohlikHealthEnabled', ({ rohlikHealthEnabled }) => {
+    tog.checked = rohlikHealthEnabled !== false;
+  });
+  tog.addEventListener('change', () => {
+    enabled = tog.checked;
+    chrome.storage.local.set({ rohlikHealthEnabled: enabled });
+    if (!enabled) removeAllBadges(); else processAll();
+  });
+
+  // close
+  el.querySelector('#rh-panel-close').addEventListener('click', () => togglePanel(false));
+
+  // clear cache
+  const msg = el.querySelector('#rh-panel-msg');
+  el.querySelector('#rh-panel-clear').addEventListener('click', () => {
+    chrome.runtime.sendMessage({ type: 'CLEAR_CACHE' }, () => {
+      msg.textContent = 'Cache cleared!';
+      setTimeout(() => { msg.textContent = ''; }, 2000);
+    });
+  });
+
+  return el;
+}
+
+function togglePanel(forceOpen) {
+  if (!panel) panel = buildPanel();
+  const open = forceOpen !== undefined ? forceOpen : !panel.classList.contains('rh-panel-open');
+  panel.classList.toggle('rh-panel-open', open);
+}
+
+// Handle messages
 chrome.runtime.onMessage.addListener((msg, _sender, sendResponse) => {
+  if (msg.type === 'TOGGLE_PANEL') togglePanel();
   if (msg.type === 'GET_COUNT') {
-    const count = document.querySelectorAll(`[${PROCESSED_ATTR}="done"]`).length;
-    sendResponse({ count });
+    sendResponse({ count: document.querySelectorAll(`[${PROCESSED_ATTR}="done"]`).length });
   }
 });
 
