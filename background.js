@@ -187,6 +187,14 @@ function searchVariants(name) {
   });
 }
 
+function isPlausibleMatch(searchTerm, productName) {
+  if (!productName) return false;
+  const searchWords = stripDiacritics(searchTerm.toLowerCase()).split(/\s+/).filter(w => w.length > 2);
+  const resultWords = stripDiacritics(productName.toLowerCase()).split(/\W+/);
+  // At least one meaningful search word must appear in the result name
+  return searchWords.some(w => resultWords.some(r => r.includes(w) || w.includes(r)));
+}
+
 async function queryOpenFoodFacts(searchTerm, lang = 'en') {
   const params = new URLSearchParams({
     q: searchTerm,
@@ -202,7 +210,8 @@ async function queryOpenFoodFacts(searchTerm, lang = 'en') {
     return data.products?.find(p =>
       p.nutriscore_grade &&
       p.nutriscore_grade !== 'not-applicable' &&
-      p.nutriscore_grade !== 'unknown'
+      p.nutriscore_grade !== 'unknown' &&
+      isPlausibleMatch(searchTerm, p.product_name)
     ) || null;
   } catch {
     return null;
@@ -272,13 +281,19 @@ const FALLBACK_RULES = [
   ]},
 ];
 
+// Zero/light/diet markers — these upgrade E→C and D→C for sugary drink keywords
+const ZERO_MARKERS = ['zero','light','diet','bez cukru','sugar free','no sugar','sugarfree'];
+
 function fallbackScore(name, category = '') {
   const lower = name.toLowerCase();
   const catLower = category.toLowerCase();
+  const isZeroSugar = ZERO_MARKERS.some(m => lower.includes(m));
 
   for (const rule of FALLBACK_RULES) {
     if (rule.keywords.some(k => lower.includes(k))) {
-      return { score: rule.score, source: 'fallback' };
+      // Zero/light drinks are genuinely less bad — upgrade E or D to C
+      const score = isZeroSugar && (rule.score === 'E' || rule.score === 'D') ? 'C' : rule.score;
+      return { score, source: 'fallback' };
     }
   }
 
