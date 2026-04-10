@@ -307,7 +307,7 @@ function buildPanel() {
     </div>
     <div id="rh-panel-footer">Data from <a href="https://world.openfoodfacts.org" target="_blank">Open Food Facts</a></div>
   `;
-  document.body.appendChild(el);
+  document.documentElement.appendChild(el);
 
   // populate count
   el.querySelector('#rh-panel-count').textContent =

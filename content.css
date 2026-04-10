@@ -1,24 +1,28 @@
 /* RohlikHealth — In-page Panel */
 
 #rh-panel {
-  position: fixed;
-  top: 0;
-  right: -260px;
-  width: 240px;
-  background: #fff;
-  border-radius: 0 0 0 12px;
-  box-shadow: -4px 0 20px rgba(0,0,0,0.15);
-  z-index: 2147483647;
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-  font-size: 13px;
-  color: #222;
-  transition: right 0.25s ease;
-  border: 1px solid #e5e5e5;
-  border-right: none;
+  all: initial;
+  position: fixed !important;
+  top: 0 !important;
+  right: -260px !important;
+  width: 240px !important;
+  height: auto !important;
+  background: #fff !important;
+  border-radius: 0 0 0 12px !important;
+  box-shadow: -4px 0 20px rgba(0,0,0,0.15) !important;
+  z-index: 2147483647 !important;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif !important;
+  font-size: 13px !important;
+  color: #222 !important;
+  transition: right 0.25s ease !important;
+  border: 1px solid #e5e5e5 !important;
+  border-right: none !important;
+  box-sizing: border-box !important;
+  display: block !important;
 }
 
 #rh-panel.rh-panel-open {
-  right: 0;
+  right: 0 !important;
 }
 
 #rh-panel-header {
