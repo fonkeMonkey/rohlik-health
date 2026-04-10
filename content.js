@@ -95,20 +95,9 @@ function getProductName(card) {
 }
 
 function getImageContainer(card) {
-  const img = card.querySelector('img');
-  if (!img) return card;
-
-  // If already wrapped by us, reuse it
-  if (img.parentElement?.classList.contains('rh-img-wrap')) {
-    return img.parentElement;
-  }
-
-  // Wrap img in a positioned div so badge always overlays the image precisely
-  const wrap = document.createElement('div');
-  wrap.className = 'rh-img-wrap';
-  img.parentElement.insertBefore(wrap, img);
-  wrap.appendChild(img);
-  return wrap;
+  // Use the card itself as positioning parent — no DOM manipulation needed.
+  // Cards are flex columns with image on top, so top:8px right:8px lands on the image.
+  return card;
 }
 
 function injectBadge(card, ratingData) {
