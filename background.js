@@ -116,10 +116,27 @@ const CZ_EN = {
   'olej':'oil','ocet':'vinegar','mouka':'flour',
   'tofu':'tofu','hummus':'hummus','tahini':'tahini',
   'granola':'granola','müsli':'muesli',
-  // adjectives worth keeping (become English search modifiers)
+  // adjectives worth keeping
   'uzený':'smoked','sušený':'dried','strouhaný':'grated',
   'mražený':'frozen','vařený':'cooked','pečený':'baked',
   'plnotučné':'whole fat','polotučné':'semi skimmed','odstředěné':'skimmed',
+  // extra nouns missing from original dict
+  'cibule':'onion','česnek':'garlic','hrozny':'grapes','hrozen':'grape',
+  'ředkvičky':'radish','ředkvička':'radish',
+  'arašídy':'peanuts','arašídů':'peanuts','arašíd':'peanut',
+  'ořechy':'nuts','ořechů':'nuts','ořech':'nut',
+  'olej':'oil','olivový':'olive oil','řepkový':'rapeseed oil',
+  'voda':'water','kyselka':'sparkling water','perlivá':'sparkling',
+  'minerální':'mineral','pramenitá':'spring water',
+  'kapsle':'capsule','kávové':'coffee',
+  'ravioli':'ravioli','tortellini':'tortellini','gnocchi':'gnocchi',
+  'prosciutto':'prosciutto','crudo':'prosciutto crudo',
+  'kari':'curry','karí':'curry',
+  'kulaida':'mushroom soup','boršč':'borscht',
+  'žvýkačka':'chewing gum','žvýkačky':'chewing gum',
+  'gatorade':'gatorade sports drink',
+  'yfood':'meal replacement drink',
+  'rajčata':'tomatoes','rajčat':'tomatoes',
 };
 
 // Expand with diacritic-stripped aliases (e.g. "mleko" → "milk" as well as "mléko")
@@ -219,56 +236,123 @@ async function queryOpenFoodFacts(searchTerm, lang = 'en') {
 }
 
 // Comprehensive keyword scoring (Czech vocabulary)
+// NOTE: use word stems where Czech morphology causes plural/case mismatches
+// e.g. 'ořech' matches ořech/ořechy/ořechů/ořeším; 'žvýkačk' matches žvýkačka/žvýkačky
 const FALLBACK_RULES = [
   { score: 'A', keywords: [
-    'zelenina','salát','brokolice','špenát','kapusta','rajče','okurka','paprika',
-    'mrkev','mrkva','celer','řepa','cuketa','lilek','hrášek','fazole','čočka',
-    'cizrna','kukuřice','kedluben','pórek','pór','mangold','rukola','fenykl',
-    'chřest','batát','ředkvička','petržel','houby','žampiony','hlíva',
-    'ovoce','jablko','hruška','borůvky','maliny','jahody','citron','pomeranč',
-    'grapefruit','kiwi','mango','avokádo','třešně','meruňky','broskve','švestky',
-    'nektarinka','meloun','ananas','banán','papája','fíky','datle','rozinky',
-    'brusinka','rybíz','angrešt','ostružiny','mandarinka','limetka','acai','goji',
-    'edamame','tofu','tempeh','luštěniny',
+    // vegetables — stems handle plural/case forms
+    'zelenina','salát','brokolice','špenát','kapusta',
+    'rajče','rajčat',                           // rajče / rajčata / rajčat
+    'okurka','okurk',
+    'paprika','mrkev','mrkva','celer','řepa','cuketa','lilek',
+    'hrášek','fazole','čočka','cizrna','kukuřice','kedluben',
+    'pórek','pór','mangold','rukola','fenykl','chřest',
+    'batát',                                     // batát/batáty
+    'ředkvičk',                                  // ředkvička/ředkvičky
+    'petržel','houby','žampion','hlíva',
+    'cibul',                                     // cibule/cibulí/cibulky
+    'česnek','česneku','česnekový',
+    'hrozn',                                     // hrozny/hroznů/hroznu
+    // fruits
+    'ovoce','jablk',                             // jablko/jablka/jablek
+    'hruška','hrušk',
+    'borůvk',                                    // borůvky/borůvek
+    'malin',                                     // maliny/malin
+    'jahod',                                     // jahody/jahod
+    'citron','pomeranč','grapefruit','kiwi','mango','avokádo',
+    'třešn','višn',                              // třešně/třešní; višně/višní
+    'meruňk','broskv','švestk','nektarink',
+    'meloun','ananas','banán','papája',
+    'fík','datle','rozink','brusink',
+    'rybíz','angrešt','ostružin',
+    'mandarink','limetka','acai','goji',
+    'edamame','luštěnin',
   ]},
   { score: 'B', keywords: [
-    'jogurt','tvaroh','cottage','skyr','kefír','žervé',
+    // dairy / fermented
+    'jogurt','tvaroh','cottage','skyr','kefír','žervé','parenic',
+    // poultry & rabbit
     'kuřecí','kuře','krůtí','drůbež','králík',
-    'losos','treska','tuňák','sardinky','makrela','platýs','pstruh','kapr','krevety',
-    'vejce','vaječný',
-    'mandle','vlašské','kešu','pistácie','para','lískové','slunečnicové','dýňové',
-    'chia','lněné','konopné','sezam',
-    'celozrnný','celozrnné','žitný','žitné','ovesné','oves','quinoa','bulgur',
+    // fish & seafood — rybí/rybích/ryby all contain 'ryb'
+    'ryb',                                       // ryba/ryby/rybí/rybích
+    'losos','treska','tuňák','sardinky','sardink','makrela',
+    'platýs','pstruh','kapr','krevet','mušle',
+    // eggs
+    'vejce','vaječn',
+    // nuts & seeds — use stems
+    'mandl',                                     // mandle/mandlí
+    'vlašsk',                                    // vlašské ořechy
+    'kešu','pistáci','lískov','slunečnicov','dýňov',
+    'chia','lněn','konopn','sezam',
+    'ořech',                                     // ořech/ořechy/ořechů — catches směs ořechů
+    'arašíd',                                    // arašídy/arašídů
+    // whole grains
+    'celozrnn','žitn','ovesn','oves','quinoa','bulgur',
     'pohanka','špalda','amarant','kamut',
-    'hummus','tahini','miso','tempeh',
-    'proteinový','protein','whey','skyr',
-    'parenica','parenice',
+    // other healthy
+    'hummus','tahini','miso','tofu','tempeh',
+    'proteinov','protein','whey',
+    // water — mineral/sparkling water is B (hydrating, no calories)
+    'minerální voda','kyselka','pramenitá','stolní voda',
+    'perlivá voda','neperlivá voda','jemně perlivá',
+    // coffee (black/capsules — minimal calories)
+    'kávové kapsle','espresso kapsle','nespresso','kávová kapsle',
+    'káva','espresso','americano',
   ]},
   { score: 'C', keywords: [
-    'mléko','smetana','máslo','tvarůžky',
-    'sýr','eidam','gouda','mozzarella','čedar','brie','camembert','parmezán',
-    'ementál','ricotta','mascarpone','feta','tavený','pomazánka',
-    'chléb','rohlík','houska','bageta','tortilla','pita','wrap',
-    'těstoviny','špagety','rýže','kroupy','kuskus','polenta','jáhly',
-    'brambory','bramborový',
-    'polévka','vývar','bujón','omáčka','protlak',
-    'šunka','hovězí','vepřové','jehněčí','svíčková','guláš',
-    'granola','müsli',
+    // dairy
+    'mléko','mlék',                              // mléko/mléka/mlékem
+    'smetana','máslo','tvarůžky',
+    'sýr','sýru','sýrem','sýrů',                 // all forms contain 'sýr'
+    'eidam','gouda','mozzarella','cheddar','čedar',
+    'brie','camembert','parmezán','ementál',
+    'ricotta','mascarpone','feta','tavený','pomazánka',
+    // bread & grains
+    'chléb','chleb','rohlík','houska','bageta','tortilla','pita','wrap',
+    'těstovin','špaget','penne','fusilli','lasagne',
+    'ravioli','tortellini','gnocchi',            // pasta types
+    'rýže','kroupy','kuskus','polenta','jáhly',
+    // starchy veg
+    'brambor',                                   // brambory/bramborový/brambor
+    // meals & soups
+    'polévka','polévk','vývar','bujón',
+    'omáčka','omáčk','protlak','passata',
+    'guláš','svíčková','karbanátek',
+    'kulaida','boršč','minestrone','česnečka','gulášová','kulajda',
+    // meat
+    'šunka','šunk','hovězí','vepřové','jehněčí',
+    // ready meals — anything with rice/curry/pasta combo
+    'kari','karí','curry','butter chicken','kung pao',
+    'lasagne bolognese','bolognese','carbonara',
+    'basmati','jasmínová rýže',
+    // oils
+    'olej','olivový','slunečnicový olej','řepkový',
+    // preserved veg
+    'rajčata sušená','sušená rajčata','rajčat',  // rajčata/rajčat in oil
+    'kapary',
+    // other
+    'granola','müsli','cornflakes',
+    'meal replacement','yfood','huel',           // fortified meal drinks
   ]},
   { score: 'D', keywords: [
     'klobása','párek','salám','mortadela','slanina','špek','jitrnice','tlačenka',
     'paštika','sekaná',
-    'smažen','smažený','fritovan','hranolky','nugety',
+    'prosciutto','crudo','pancetta','bresaola',  // cured meats
+    'smažen','fritovan','hranolky','nugety',
     'chipsy','křupky','krekry','preclíky','popcorn',
     'sušenky','piškoty','oplatky','vafle','croissant','donut','kobliha',
     'koláč','dort','zákusek','muffin','brownie','cheesecake','puding',
     'zmrzlina','nanuk','sorbet',
-    'čokoláda','bonbon','karamel','lízátko','žvýkačka','cukrovinka',
+    'čokoláda','bonbon','karamel','lízátko',
+    'žvýkačk',                                  // žvýkačka/žvýkačky
+    'cukrovinka',
     'džem','marmeláda','med','sirup','povidla',
     'kečup','majonéza','tatarská','barbecue',
     'instantní','ramen',
     'ledový čaj','ice tea',
     'tyčinka','cereální','müsli bar',
+    // sports drinks with sugar
+    'gatorade','powerade','izotonick','sportovní nápoj',
   ]},
   { score: 'E', keywords: [
     'cukr','fruktóza','glukóza',
