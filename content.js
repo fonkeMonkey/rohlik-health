@@ -94,6 +94,12 @@ function getProductName(card) {
   return null;
 }
 
+function getProductId(card) {
+  const href = card.getAttribute('href') || '';
+  const m = href.match(/^\/(\d+)-/);
+  return m ? m[1] : null;
+}
+
 function getImageContainer(card) {
   // Use the card itself as positioning parent — no DOM manipulation needed.
   // Cards are flex columns with image on top, so top:8px right:8px lands on the image.
@@ -133,18 +139,21 @@ function injectBadge(card, ratingData) {
 
   if (source === 'fallback') {
     html += `<div class="rh-tt-note">Estimated from product name</div>`;
+  } else if (source === 'computed') {
+    html += `<div class="rh-tt-note">Score computed from rohlik.cz nutrition data</div>`;
   }
 
-  if (per100g) {
+  if (per100g && Object.values(per100g).some(v => v != null)) {
     html += `<table class="rh-tt-table">`;
     const rows = [
-      ['Energy', per100g.energy != null ? `${per100g.energy} kcal` : null],
-      ['Fat', per100g.fat != null ? `${per100g.fat.toFixed(1)} g` : null],
-      ['Saturated fat', per100g.saturatedFat != null ? `${per100g.saturatedFat.toFixed(1)} g` : null],
-      ['Sugar', per100g.sugar != null ? `${per100g.sugar.toFixed(1)} g` : null],
-      ['Protein', per100g.protein != null ? `${per100g.protein.toFixed(1)} g` : null],
-      ['Salt', per100g.salt != null ? `${per100g.salt.toFixed(2)} g` : null],
-      ['Fibre', per100g.fiber != null ? `${per100g.fiber.toFixed(1)} g` : null],
+      ['Energy',       per100g.energy       != null ? `${per100g.energy} kcal`              : null],
+      ['Fat',          per100g.fat          != null ? `${per100g.fat.toFixed(1)} g`          : null],
+      ['Saturated fat',per100g.saturatedFat != null ? `${per100g.saturatedFat.toFixed(1)} g` : null],
+      ['Carbs',        per100g.carbs        != null ? `${per100g.carbs.toFixed(1)} g`        : null],
+      ['Sugar',        per100g.sugar        != null ? `${per100g.sugar.toFixed(1)} g`        : null],
+      ['Protein',      per100g.protein      != null ? `${per100g.protein.toFixed(1)} g`      : null],
+      ['Salt',         per100g.salt         != null ? `${per100g.salt.toFixed(2)} g`         : null],
+      ['Fibre',        per100g.fiber        != null ? `${per100g.fiber.toFixed(1)} g`        : null],
     ].filter(([, v]) => v !== null);
 
     for (const [label, value] of rows) {
@@ -153,9 +162,11 @@ function injectBadge(card, ratingData) {
     html += `</table><div class="rh-tt-footer">per 100g</div>`;
   }
 
-  if (source === 'openfoodfacts') {
-    html += `<div class="rh-tt-source">Source: Open Food Facts</div>`;
-  }
+  const sourceLabel = {
+    'openfoodfacts': 'Source: Open Food Facts',
+    'computed': 'Source: rohlik.cz nutrition data',
+  }[source];
+  if (sourceLabel) html += `<div class="rh-tt-source">${sourceLabel}</div>`;
 
   tooltip.innerHTML = html;
   badge.appendChild(tooltip);
@@ -221,8 +232,9 @@ function processCard(card) {
   imgContainer.style.position = 'relative';
   imgContainer.appendChild(loadingBadge);
 
-  const category = window.location.pathname; // e.g. /c300102000-ovoce-a-zelenina
-  chrome.runtime.sendMessage({ type: 'GET_RATING', productName: name, category }, (response) => {
+  const category = window.location.pathname;
+  const productId = getProductId(card);
+  chrome.runtime.sendMessage({ type: 'GET_RATING', productName: name, category, productId }, (response) => {
     loadingBadge.remove();
     if (response) {
       injectBadge(card, response);

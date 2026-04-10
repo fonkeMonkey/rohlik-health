@@ -76,7 +76,7 @@ const CZ_EN = {
   'jablko':'apple','hruška':'pear','banán':'banana','pomeranč':'orange',
   'citron':'lemon','jahody':'strawberries','maliny':'raspberries',
   'borůvky':'blueberries','třešně':'cherries','višně':'sour cherries',
-  'meruňky':'apricots','broskve':'peaches','švestky','plums','nektarinka':'nectarine',
+  'meruňky':'apricots','broskve':'peaches','švestky':'plums','nektarinka':'nectarine',
   'mango':'mango','ananas':'pineapple','kiwi':'kiwi','avokádo':'avocado',
   'hrozny':'grapes','meloun':'melon','fíky':'figs','datle':'dates',
   'mandarinka':'mandarin','grapefruit':'grapefruit','brusinka':'cranberry',
@@ -276,7 +276,70 @@ function fallbackScore(name, category = '') {
   return { score: '?', source: 'fallback' };
 }
 
-async function fetchNutriScore(productName, category = '') {
+// Fetch nutritional data directly from rohlik.cz product detail API.
+// Returns per100g object if nutritionalValues is populated, else null.
+async function fetchRohlikNutrition(productId) {
+  if (!productId) return null;
+  try {
+    const resp = await fetch(`https://www.rohlik.cz/api/v1/products/${productId}/details`);
+    if (!resp.ok) return null;
+    const data = await resp.json();
+
+    const vals = data.nutritionalValues ?? data.product?.nutritionalValues ?? [];
+    if (!vals.length) return null;
+
+    // Map rohlik nutrient keys → our keys
+    const map = {};
+    for (const v of vals) {
+      const key = (v.name || v.key || '').toLowerCase();
+      const val = parseFloat(v.valuePer100g ?? v.value ?? v.amount ?? 0);
+      if (key.includes('energ') || key.includes('kcal'))        map.energy = Math.round(val);
+      else if (key.includes('tuk') || key === 'fat')             map.fat = val;
+      else if (key.includes('nasycen') || key.includes('saturated')) map.saturatedFat = val;
+      else if (key.includes('sacharid') || key.includes('carbo')) map.carbs = val;
+      else if (key.includes('cukr') || key.includes('sugar'))   map.sugar = val;
+      else if (key.includes('bílkov') || key.includes('protein')) map.protein = val;
+      else if (key.includes('sůl') || key.includes('salt') || key.includes('sodium')) map.salt = val;
+      else if (key.includes('vlákn') || key.includes('fiber') || key.includes('fibre')) map.fiber = val;
+    }
+
+    return Object.keys(map).length >= 2 ? map : null;
+  } catch {
+    return null;
+  }
+}
+
+// Compute a simple Nutri-Score estimate from raw macros when OFF has no match
+function scoreFromNutriments(n) {
+  if (!n) return null;
+  const energy = n.energy ?? 0;
+  const sugar   = n.sugar   ?? 0;
+  const fat     = n.fat     ?? 0;
+  const satFat  = n.saturatedFat ?? 0;
+  const protein = n.protein ?? 0;
+  const fiber   = n.fiber   ?? 0;
+  const salt    = n.salt    ?? 0;
+
+  // Simplified Nutri-Score points (bad = high, good = low)
+  let bad = 0;
+  bad += energy > 3350 ? 10 : energy > 2680 ? 6 : energy > 2010 ? 3 : 0;
+  bad += sugar  > 45   ? 10 : sugar  > 30   ? 6 : sugar  > 15   ? 3 : 0;
+  bad += satFat > 10   ? 10 : satFat > 7    ? 6 : satFat > 4    ? 3 : 0;
+  bad += salt   > 1.8  ? 10 : salt   > 0.9  ? 6 : salt   > 0.3  ? 3 : 0;
+
+  let good = 0;
+  good += protein > 8  ? 5  : protein > 5  ? 3  : protein > 2 ? 1 : 0;
+  good += fiber   > 7  ? 5  : fiber   > 4  ? 3  : fiber   > 2 ? 1 : 0;
+
+  const score = bad - good;
+  if (score <= 0)  return 'A';
+  if (score <= 3)  return 'B';
+  if (score <= 8)  return 'C';
+  if (score <= 14) return 'D';
+  return 'E';
+}
+
+async function fetchNutriScore(productName, category = '', productId = null) {
   const cacheKey = `rh_${productName.toLowerCase().trim()}`;
 
   const cached = await chrome.storage.local.get(cacheKey);
@@ -287,29 +350,44 @@ async function fetchNutriScore(productName, category = '') {
 
   let result;
   try {
+    // 1. Try rohlik.cz detail API first (same-origin, fast, exact product)
+    const rohlikNutrition = await fetchRohlikNutrition(productId);
+
+    // 2. Try OpenFoodFacts for official Nutri-Score
     const variants = searchVariants(productName);
-    let product = null;
+    let offProduct = null;
     for (const [term, lang] of variants) {
-      product = await queryOpenFoodFacts(term, lang);
-      if (product) break;
+      offProduct = await queryOpenFoodFacts(term, lang);
+      if (offProduct) break;
     }
 
-    if (product) {
-      const n = product.nutriments || {};
-      const kcal = n['energy-kcal_100g'] ?? (n['energy_100g'] ? n['energy_100g'] / 4.184 : 0);
+    if (offProduct) {
+      // Prefer OFF Nutri-Score, but use rohlik nutrition data if richer
+      const n = rohlikNutrition || offProduct.nutriments || {};
+      const offN = offProduct.nutriments || {};
+      const kcal = n.energy ?? offN['energy-kcal_100g'] ?? (offN['energy_100g'] ? offN['energy_100g'] / 4.184 : 0);
       result = {
-        score: product.nutriscore_grade.toUpperCase(),
+        score: offProduct.nutriscore_grade.toUpperCase(),
         source: 'openfoodfacts',
-        name: product.product_name || productName,
+        name: offProduct.product_name || productName,
         per100g: {
           energy: Math.round(kcal),
-          fat: n['fat_100g'] ?? null,
-          saturatedFat: n['saturated-fat_100g'] ?? null,
-          sugar: n['sugars_100g'] ?? null,
-          protein: n['proteins_100g'] ?? null,
-          salt: n['salt_100g'] ?? null,
-          fiber: n['fiber_100g'] ?? null,
+          fat:          n.fat          ?? offN['fat_100g']           ?? null,
+          saturatedFat: n.saturatedFat ?? offN['saturated-fat_100g'] ?? null,
+          sugar:        n.sugar        ?? offN['sugars_100g']         ?? null,
+          protein:      n.protein      ?? offN['proteins_100g']       ?? null,
+          salt:         n.salt         ?? offN['salt_100g']           ?? null,
+          fiber:        n.fiber        ?? offN['fiber_100g']          ?? null,
         },
+      };
+    } else if (rohlikNutrition) {
+      // Have rohlik nutrition but no OFF match — compute score from macros
+      const computed = scoreFromNutriments(rohlikNutrition);
+      result = {
+        score: computed || '?',
+        source: computed ? 'computed' : 'fallback',
+        name: productName,
+        per100g: rohlikNutrition,
       };
     } else {
       result = fallbackScore(productName, category);
@@ -327,9 +405,9 @@ async function fetchNutriScore(productName, category = '') {
 
 function processQueue() {
   while (activeRequests < MAX_CONCURRENT && queue.length > 0) {
-    const { productName, category, resolve } = queue.shift();
+    const { productName, category, productId, resolve } = queue.shift();
     activeRequests++;
-    fetchNutriScore(productName, category)
+    fetchNutriScore(productName, category, productId)
       .then(resolve)
       .finally(() => {
         activeRequests--;
@@ -341,7 +419,7 @@ function processQueue() {
 chrome.runtime.onMessage.addListener((msg, _sender, sendResponse) => {
   if (msg.type === 'GET_RATING') {
     new Promise(resolve => {
-      queue.push({ productName: msg.productName, category: msg.category || '', resolve });
+      queue.push({ productName: msg.productName, category: msg.category || '', productId: msg.productId || null, resolve });
       processQueue();
     }).then(sendResponse);
     return true;
