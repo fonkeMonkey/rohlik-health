@@ -1,0 +1,251 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>RohlikHealth</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      width: 240px;
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      background: #fff;
+      color: #222;
+    }
+
+    header {
+      background: linear-gradient(135deg, #038141, #85bb2f);
+      padding: 14px 16px;
+      color: #fff;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .logo {
+      width: 32px;
+      height: 32px;
+      background: rgba(255,255,255,0.25);
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 16px;
+      font-weight: 900;
+    }
+
+    h1 {
+      font-size: 15px;
+      font-weight: 700;
+    }
+
+    h1 span {
+      font-size: 11px;
+      font-weight: 400;
+      opacity: 0.85;
+      display: block;
+    }
+
+    .content {
+      padding: 14px 16px;
+    }
+
+    .toggle-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 12px;
+    }
+
+    .toggle-label {
+      font-size: 13px;
+      font-weight: 600;
+    }
+
+    .toggle {
+      position: relative;
+      width: 40px;
+      height: 22px;
+    }
+
+    .toggle input {
+      opacity: 0;
+      width: 0;
+      height: 0;
+    }
+
+    .slider {
+      position: absolute;
+      inset: 0;
+      background: #ccc;
+      border-radius: 11px;
+      cursor: pointer;
+      transition: background 0.2s;
+    }
+
+    .slider:before {
+      content: '';
+      position: absolute;
+      width: 16px;
+      height: 16px;
+      left: 3px;
+      top: 3px;
+      background: #fff;
+      border-radius: 50%;
+      transition: transform 0.2s;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.2);
+    }
+
+    input:checked + .slider {
+      background: #038141;
+    }
+
+    input:checked + .slider:before {
+      transform: translateX(18px);
+    }
+
+    .stats {
+      background: #f5f5f5;
+      border-radius: 8px;
+      padding: 10px 12px;
+      margin-bottom: 12px;
+      font-size: 12px;
+      color: #555;
+    }
+
+    .stats strong {
+      display: block;
+      font-size: 22px;
+      font-weight: 800;
+      color: #038141;
+      line-height: 1;
+      margin-bottom: 2px;
+    }
+
+    .legend {
+      display: flex;
+      gap: 4px;
+      margin-bottom: 12px;
+      justify-content: space-between;
+    }
+
+    .legend-item {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 3px;
+      font-size: 10px;
+      color: #666;
+    }
+
+    .legend-badge {
+      width: 24px;
+      height: 24px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 800;
+      font-size: 12px;
+      color: #fff;
+    }
+
+    .bg-a { background: #038141; }
+    .bg-b { background: #85bb2f; }
+    .bg-c { background: #fecb02; color: #333 !important; }
+    .bg-d { background: #ee8100; }
+    .bg-e { background: #e63e11; }
+
+    .clear-btn {
+      width: 100%;
+      padding: 8px;
+      background: #f0f0f0;
+      border: none;
+      border-radius: 6px;
+      font-size: 12px;
+      color: #555;
+      cursor: pointer;
+      transition: background 0.15s;
+    }
+
+    .clear-btn:hover {
+      background: #e0e0e0;
+    }
+
+    footer {
+      padding: 8px 16px;
+      border-top: 1px solid #eee;
+      font-size: 10px;
+      color: #aaa;
+      text-align: center;
+    }
+
+    footer a {
+      color: #038141;
+      text-decoration: none;
+    }
+
+    #status-msg {
+      font-size: 11px;
+      color: #038141;
+      text-align: center;
+      min-height: 14px;
+      margin-top: 6px;
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <div class="logo">H</div>
+    <h1>RohlikHealth <span>Nutri-Score ratings</span></h1>
+  </header>
+
+  <div class="content">
+    <div class="toggle-row">
+      <span class="toggle-label">Show ratings</span>
+      <label class="toggle">
+        <input type="checkbox" id="enableToggle" checked>
+        <span class="slider"></span>
+      </label>
+    </div>
+
+    <div class="stats">
+      <strong id="rated-count">0</strong>
+      products rated on this page
+    </div>
+
+    <div class="legend">
+      <div class="legend-item">
+        <div class="legend-badge bg-a">A</div>
+        <span>Best</span>
+      </div>
+      <div class="legend-item">
+        <div class="legend-badge bg-b">B</div>
+        <span>Good</span>
+      </div>
+      <div class="legend-item">
+        <div class="legend-badge bg-c">C</div>
+        <span>Fair</span>
+      </div>
+      <div class="legend-item">
+        <div class="legend-badge bg-d">D</div>
+        <span>Poor</span>
+      </div>
+      <div class="legend-item">
+        <div class="legend-badge bg-e">E</div>
+        <span>Worst</span>
+      </div>
+    </div>
+
+    <button class="clear-btn" id="clearCache">Clear rating cache</button>
+    <div id="status-msg"></div>
+  </div>
+
+  <footer>
+    Data from <a href="https://world.openfoodfacts.org" target="_blank">Open Food Facts</a>
+  </footer>
+
+  <script src="popup.js"></script>
+</body>
+</html>

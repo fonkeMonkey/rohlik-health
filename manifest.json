@@ -1,0 +1,41 @@
+{
+  "manifest_version": 3,
+  "name": "RohlikHealth",
+  "version": "1.0.0",
+  "description": "Adds Nutri-Score health ratings to every product on rohlik.cz",
+  "permissions": [
+    "storage"
+  ],
+  "host_permissions": [
+    "*://*.rohlik.cz/*",
+    "*://world.openfoodfacts.org/*"
+  ],
+  "background": {
+    "scripts": ["background.js"]
+  },
+  "content_scripts": [
+    {
+      "matches": ["*://*.rohlik.cz/*"],
+      "js": ["content.js"],
+      "css": ["content.css"],
+      "run_at": "document_idle"
+    }
+  ],
+  "action": {
+    "default_popup": "popup.html",
+    "default_icon": {
+      "48": "icons/icon-48.png",
+      "96": "icons/icon-96.png"
+    }
+  },
+  "icons": {
+    "48": "icons/icon-48.png",
+    "96": "icons/icon-96.png"
+  },
+  "browser_specific_settings": {
+    "gecko": {
+      "id": "rohlikhealth@extension",
+      "strict_min_version": "109.0"
+    }
+  }
+}
