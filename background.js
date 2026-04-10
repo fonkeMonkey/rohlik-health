@@ -117,30 +117,106 @@ function fallbackScore(name, category = '') {
   return { score: '?', source: 'fallback' };
 }
 
+// Czech → English food word translation dictionary
+const CZ_EN = {
+  // dairy
+  'mléko':'milk','smetana':'cream','máslo':'butter','sýr':'cheese','jogurt':'yogurt',
+  'tvaroh':'quark','kefír':'kefir','skyr':'skyr','eidam':'edam','gouda':'gouda',
+  'mozzarella':'mozzarella','parmezán':'parmesan','parmazán':'parmesan',
+  'ementál':'emmental','feta':'feta','brie':'brie','camembert':'camembert',
+  'ricotta':'ricotta','cottage':'cottage cheese',
+  // meat & fish
+  'kuřecí':'chicken','kuře':'chicken','krůtí':'turkey','hovězí':'beef',
+  'vepřové':'pork','jehněčí':'lamb','telecí':'veal','králík':'rabbit',
+  'losos':'salmon','treska':'cod','tuňák':'tuna','makrela':'mackerel',
+  'sardinka':'sardine','platýs':'plaice','pstruh':'trout','kapr':'carp',
+  'krevety':'shrimp','mušle':'mussels',
+  'šunka':'ham','salám':'salami','klobása':'sausage','párek':'frankfurter',
+  'slanina':'bacon','uzenina':'cold cuts',
+  // vegetables
+  'rajče':'tomato','okurka':'cucumber','paprika':'pepper','mrkev':'carrot',
+  'cibule':'onion','česnek':'garlic','brokolice':'broccoli','špenát':'spinach',
+  'kapusta':'cabbage','zelí':'cabbage','kedluben':'kohlrabi','celer':'celery',
+  'řepa':'beet','cuketa':'zucchini','lilek':'eggplant','hrášek':'peas',
+  'fazole':'beans','čočka':'lentils','cizrna':'chickpeas','kukuřice':'corn',
+  'pórek':'leek','pór':'leek','chřest':'asparagus','batát':'sweet potato',
+  'ředkvička':'radish','petržel':'parsley','houby':'mushrooms','žampiony':'mushrooms',
+  // fruits
+  'jablko':'apple','hruška':'pear','banán':'banana','pomeranč':'orange',
+  'citron':'lemon','jahody':'strawberries','maliny':'raspberries',
+  'borůvky':'blueberries','třešně':'cherries','višně':'sour cherries',
+  'meruňky':'apricots','broskve':'peaches','švestky':'plums','mango':'mango',
+  'ananas':'pineapple','kiwi':'kiwi','avokádo':'avocado','hrozny':'grapes',
+  'meloun':'melon','granátové':'pomegranate','fíky':'figs','datle':'dates',
+  'mandarinka':'mandarin','grapefruit':'grapefruit','brusinka':'cranberry',
+  // bread & grains
+  'chléb':'bread','rohlík':'bread roll','houska':'bread roll','bageta':'baguette',
+  'těstoviny':'pasta','špagety':'spaghetti','rýže':'rice','kroupy':'barley',
+  'ovesné':'oats','oves':'oats','celozrnný':'whole grain','žitný':'rye',
+  'pohanka':'buckwheat','quinoa':'quinoa','bulgur':'bulgur','kuskus':'couscous',
+  // sweets & snacks
+  'čokoláda':'chocolate','sušenky':'cookies','koláč':'cake','dort':'cake',
+  'zmrzlina':'ice cream','chipsy':'chips','hranolky':'french fries',
+  'med':'honey','džem':'jam','marmeláda':'marmalade','cukr':'sugar',
+  // drinks
+  'pivo':'beer','víno':'wine','džus':'juice','limonáda':'lemonade',
+  'káva':'coffee','čaj':'tea','voda':'water','mléko':'milk',
+  // other
+  'vejce':'eggs','ořechy':'nuts','mandle':'almonds','vlašské':'walnuts',
+  'arašídy':'peanuts','pistácie':'pistachios','kešu':'cashews',
+  'olej':'oil','ocet':'vinegar','mouka':'flour','škrob':'starch',
+  'tofu':'tofu','hummus':'hummus','tahini':'tahini',
+};
+
+function translateToEnglish(name) {
+  let result = name.toLowerCase()
+    .replace(/\d+\s*(g|kg|ml|l|ks|cl|mg|%)\b/gi, '') // strip weights
+    .replace(/\s+/g, ' ').trim();
+
+  // Replace Czech words with English equivalents
+  for (const [cz, en] of Object.entries(CZ_EN)) {
+    result = result.replace(new RegExp(`\\b${cz}\\b`, 'gi'), en);
+  }
+  return result.trim();
+}
+
 // Generate search query variants to try (most specific → least specific)
+// Returns pairs of [searchTerm, language]
 function searchVariants(name) {
   const clean = name
-    .replace(/\d+\s*(g|kg|ml|l|ks|cl|mg)\b/gi, '') // strip weights/quantities
+    .replace(/\d+\s*(g|kg|ml|l|ks|cl|mg|%)\b/gi, '')
     .replace(/\s+/g, ' ').trim();
 
   const words = clean.split(' ').filter(w => w.length > 2);
-  const variants = [clean];
+  const translated = translateToEnglish(clean);
+  const transWords = translated.split(' ').filter(w => w.length > 2);
 
-  // Drop first word (often brand name): "Madeta Jihočeský cottage" → "Jihočeský cottage"
-  if (words.length > 2) variants.push(words.slice(1).join(' '));
+  const variants = [];
 
-  // Last 2-3 meaningful words (core product name)
-  if (words.length > 3) variants.push(words.slice(-3).join(' '));
-  if (words.length > 2) variants.push(words.slice(-2).join(' '));
+  // Czech variants
+  variants.push([clean, 'cs']);
+  if (words.length > 2) variants.push([words.slice(1).join(' '), 'cs']); // drop brand
+  if (words.length > 2) variants.push([words.slice(-2).join(' '), 'cs']); // last 2 words
 
-  // Single most descriptive word (longest word, likely the food type)
-  const longest = [...words].sort((a, b) => b.length - a.length)[0];
-  if (longest && longest.length > 4) variants.push(longest);
+  // English translated variants
+  if (translated !== clean) {
+    variants.push([translated, 'en']);
+    if (transWords.length > 1) variants.push([transWords.slice(-2).join(' '), 'en']);
+    // Single most descriptive English word
+    const longest = [...transWords].sort((a, b) => b.length - a.length)[0];
+    if (longest && longest.length > 3) variants.push([longest, 'en']);
+  }
 
-  return [...new Set(variants)]; // deduplicate
+  // Deduplicate by search term
+  const seen = new Set();
+  return variants.filter(([term]) => {
+    if (seen.has(term)) return false;
+    seen.add(term);
+    return true;
+  });
 }
 
-async function queryOpenFoodFacts(searchTerm) {
+async function queryOpenFoodFacts(searchTerm, lang = 'en') {
   const params = new URLSearchParams({
     search_terms: searchTerm,
     search_simple: 1,
@@ -148,8 +224,8 @@ async function queryOpenFoodFacts(searchTerm) {
     json: 1,
     page_size: 5,
     fields: 'product_name,nutriscore_grade,nutriments',
-    lc: 'cs',
-    cc: 'cz',
+    lc: lang,
+    // no cc filter — search globally for better coverage
   });
 
   const resp = await fetch(`${OFF_API}?${params}`);
@@ -174,11 +250,11 @@ async function fetchNutriScore(productName, category = '') {
 
   let result;
   try {
-    // Try multiple search variants until one returns a Nutri-Score
+    // Try multiple search variants (Czech + English translated) until one returns a Nutri-Score
     const variants = searchVariants(productName);
     let product = null;
-    for (const variant of variants) {
-      product = await queryOpenFoodFacts(variant);
+    for (const [term, lang] of variants) {
+      product = await queryOpenFoodFacts(term, lang);
       if (product) break;
     }
 
