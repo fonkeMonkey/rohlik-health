@@ -12,7 +12,7 @@
     "*://world.openfoodfacts.org/*"
   ],
   "background": {
-    "scripts": ["background.js"]
+    "service_worker": "background.js"
   },
   "content_scripts": [
     {
@@ -26,18 +26,20 @@
     "default_popup": "popup.html",
     "default_icon": {
       "48": "icons/icon-48.png",
-      "96": "icons/icon-96.png"
+      "96": "icons/icon-96.png",
+      "128": "icons/icon-128.png"
     },
-    "default_title": "RohlikHealth"
+    "default_title": "Rohlik Score"
   },
   "icons": {
     "48": "icons/icon-48.png",
-    "96": "icons/icon-96.png"
+    "96": "icons/icon-96.png",
+    "128": "icons/icon-128.png"
   },
   "browser_specific_settings": {
     "gecko": {
       "id": "rohlikhealth@extension",
-      "strict_min_version": "109.0",
+      "strict_min_version": "128.0",
       "data_collection_permissions": {
         "required": ["none"],
         "optional": []
