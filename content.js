@@ -135,40 +135,55 @@ function injectBadge(card, ratingData) {
   tooltip.className = 'rh-tooltip';
 
   const scoreLabel = { A: 'Excellent', B: 'Good', C: 'Fair', D: 'Poor', E: 'Bad', '?': 'Unknown' };
-  let html = `<div class="rh-tt-title">Nutri-Score: <strong class="rh-score-${score.toLowerCase()}-text">${score}</strong> — ${scoreLabel[score] || ''}</div>`;
+
+  function el(tag, cls, text) {
+    const e = document.createElement(tag);
+    if (cls) e.className = cls;
+    if (text != null) e.textContent = text;
+    return e;
+  }
+
+  const title = el('div', 'rh-tt-title');
+  title.append('Nutri-Score: ');
+  const strong = el('strong', `rh-score-${score.toLowerCase()}-text`, score);
+  title.append(strong);
+  title.append(` — ${scoreLabel[score] || ''}`);
+  tooltip.appendChild(title);
 
   if (source === 'fallback') {
-    html += `<div class="rh-tt-note">Estimated from product name</div>`;
+    tooltip.appendChild(el('div', 'rh-tt-note', 'Estimated from product name'));
   } else if (source === 'computed') {
-    html += `<div class="rh-tt-note">Score computed from rohlik.cz nutrition data</div>`;
+    tooltip.appendChild(el('div', 'rh-tt-note', 'Score computed from rohlik.cz nutrition data'));
   }
 
   if (per100g && Object.values(per100g).some(v => v != null)) {
-    html += `<table class="rh-tt-table">`;
     const rows = [
-      ['Energy',       per100g.energy       != null ? `${per100g.energy} kcal`              : null],
-      ['Fat',          per100g.fat          != null ? `${per100g.fat.toFixed(1)} g`          : null],
-      ['Saturated fat',per100g.saturatedFat != null ? `${per100g.saturatedFat.toFixed(1)} g` : null],
-      ['Carbs',        per100g.carbs        != null ? `${per100g.carbs.toFixed(1)} g`        : null],
-      ['Sugar',        per100g.sugar        != null ? `${per100g.sugar.toFixed(1)} g`        : null],
-      ['Protein',      per100g.protein      != null ? `${per100g.protein.toFixed(1)} g`      : null],
-      ['Salt',         per100g.salt         != null ? `${per100g.salt.toFixed(2)} g`         : null],
-      ['Fibre',        per100g.fiber        != null ? `${per100g.fiber.toFixed(1)} g`        : null],
+      ['Energy',        per100g.energy       != null ? `${per100g.energy} kcal`              : null],
+      ['Fat',           per100g.fat          != null ? `${per100g.fat.toFixed(1)} g`          : null],
+      ['Saturated fat', per100g.saturatedFat != null ? `${per100g.saturatedFat.toFixed(1)} g` : null],
+      ['Carbs',         per100g.carbs        != null ? `${per100g.carbs.toFixed(1)} g`        : null],
+      ['Sugar',         per100g.sugar        != null ? `${per100g.sugar.toFixed(1)} g`        : null],
+      ['Protein',       per100g.protein      != null ? `${per100g.protein.toFixed(1)} g`      : null],
+      ['Salt',          per100g.salt         != null ? `${per100g.salt.toFixed(2)} g`         : null],
+      ['Fibre',         per100g.fiber        != null ? `${per100g.fiber.toFixed(1)} g`        : null],
     ].filter(([, v]) => v !== null);
 
+    const table = el('table', 'rh-tt-table');
     for (const [label, value] of rows) {
-      html += `<tr><td>${label}</td><td>${value}</td></tr>`;
+      const tr = document.createElement('tr');
+      tr.appendChild(el('td', null, label));
+      tr.appendChild(el('td', null, value));
+      table.appendChild(tr);
     }
-    html += `</table><div class="rh-tt-footer">per 100g</div>`;
+    tooltip.appendChild(table);
+    tooltip.appendChild(el('div', 'rh-tt-footer', 'per 100g'));
   }
 
   const sourceLabel = {
     'openfoodfacts': 'Source: Open Food Facts',
     'computed': 'Source: rohlik.cz nutrition data',
   }[source];
-  if (sourceLabel) html += `<div class="rh-tt-source">${sourceLabel}</div>`;
-
-  tooltip.innerHTML = html;
+  if (sourceLabel) tooltip.appendChild(el('div', 'rh-tt-source', sourceLabel));
   badge.appendChild(tooltip);
 
   // Make badge interactive
@@ -279,64 +294,93 @@ observer.observe(document.body, {
 let panel = null;
 
 function buildPanel() {
-  const el = document.createElement('div');
-  el.id = 'rh-panel';
-  el.innerHTML = `
-    <div id="rh-panel-header">
-      <span id="rh-panel-logo">H</span>
-      <div>
-        <div id="rh-panel-title">RohlikHealth</div>
-        <div id="rh-panel-sub">Nutri-Score ratings</div>
-      </div>
-      <button id="rh-panel-close">✕</button>
-    </div>
-    <div id="rh-panel-body">
-      <div class="rh-panel-row">
-        <span class="rh-panel-label">Show ratings</span>
-        <label class="rh-toggle">
-          <input type="checkbox" id="rh-panel-toggle" checked>
-          <span class="rh-toggle-slider"></span>
-        </label>
-      </div>
-      <div id="rh-panel-stats"><strong id="rh-panel-count">0</strong> products rated on this page</div>
-      <div id="rh-panel-legend">
-        ${['A','B','C','D','E'].map(s => `<div class="rh-leg-item"><div class="rh-leg-badge rh-score-${s.toLowerCase()}">${s}</div></div>`).join('')}
-      </div>
-      <button id="rh-panel-clear">Clear rating cache</button>
-      <div id="rh-panel-msg"></div>
-    </div>
-    <div id="rh-panel-footer">Data from <a href="https://world.openfoodfacts.org" target="_blank">Open Food Facts</a></div>
-  `;
-  document.body.appendChild(el);
+  function mk(tag, id, cls) {
+    const e = document.createElement(tag);
+    if (id)  e.id = id;
+    if (cls) e.className = cls;
+    return e;
+  }
 
-  // populate count
-  el.querySelector('#rh-panel-count').textContent =
-    document.querySelectorAll(`[${PROCESSED_ATTR}="done"]`).length;
+  const panel = mk('div', 'rh-panel');
+
+  // Header
+  const header = mk('div', 'rh-panel-header');
+  const logo = mk('span', 'rh-panel-logo'); logo.textContent = 'H';
+  const titleWrap = mk('div');
+  const titleEl = mk('div', 'rh-panel-title'); titleEl.textContent = 'RohlikHealth';
+  const subEl   = mk('div', 'rh-panel-sub');   subEl.textContent   = 'Nutri-Score ratings';
+  titleWrap.append(titleEl, subEl);
+  const closeBtn = mk('button', 'rh-panel-close'); closeBtn.textContent = '✕';
+  header.append(logo, titleWrap, closeBtn);
+  panel.appendChild(header);
+
+  // Body
+  const body = mk('div', 'rh-panel-body');
+
+  const row = mk('div', null, 'rh-panel-row');
+  const rowLabel = mk('span', null, 'rh-panel-label'); rowLabel.textContent = 'Show ratings';
+  const toggleLabel = mk('label', null, 'rh-toggle');
+  const toggleInput = mk('input', 'rh-panel-toggle');
+  toggleInput.type = 'checkbox'; toggleInput.checked = true;
+  const toggleSlider = mk('span', null, 'rh-toggle-slider');
+  toggleLabel.append(toggleInput, toggleSlider);
+  row.append(rowLabel, toggleLabel);
+
+  const stats = mk('div', 'rh-panel-stats');
+  const countEl = mk('strong', 'rh-panel-count');
+  countEl.textContent = String(document.querySelectorAll(`[${PROCESSED_ATTR}="done"]`).length);
+  stats.append(countEl, ' products rated on this page');
+
+  const legend = mk('div', 'rh-panel-legend');
+  for (const s of ['A','B','C','D','E']) {
+    const item = mk('div', null, 'rh-leg-item');
+    const badge = mk('div', null, `rh-leg-badge rh-score-${s.toLowerCase()}`);
+    badge.textContent = s;
+    item.appendChild(badge);
+    legend.appendChild(item);
+  }
+
+  const clearBtn = mk('button', 'rh-panel-clear'); clearBtn.textContent = 'Clear rating cache';
+  const msg = mk('div', 'rh-panel-msg');
+
+  body.append(row, stats, legend, clearBtn, msg);
+  panel.appendChild(body);
+
+  // Footer
+  const footer = mk('div', 'rh-panel-footer');
+  footer.append('Data from ');
+  const link = document.createElement('a');
+  link.href = 'https://world.openfoodfacts.org';
+  link.target = '_blank';
+  link.rel = 'noopener noreferrer';
+  link.textContent = 'Open Food Facts';
+  footer.appendChild(link);
+  panel.appendChild(footer);
+
+  document.body.appendChild(panel);
 
   // toggle
-  const tog = el.querySelector('#rh-panel-toggle');
   chrome.storage.local.get('rohlikHealthEnabled', ({ rohlikHealthEnabled }) => {
-    tog.checked = rohlikHealthEnabled !== false;
+    toggleInput.checked = rohlikHealthEnabled !== false;
   });
-  tog.addEventListener('change', () => {
-    enabled = tog.checked;
+  toggleInput.addEventListener('change', () => {
+    enabled = toggleInput.checked;
     chrome.storage.local.set({ rohlikHealthEnabled: enabled });
     if (!enabled) removeAllBadges(); else processAll();
   });
 
   // close
-  el.querySelector('#rh-panel-close').addEventListener('click', () => togglePanel(false));
+  closeBtn.addEventListener('click', () => togglePanel(false));
 
   // clear cache
-  const msg = el.querySelector('#rh-panel-msg');
-  el.querySelector('#rh-panel-clear').addEventListener('click', () => {
+  clearBtn.addEventListener('click', () => {
     chrome.runtime.sendMessage({ type: 'CLEAR_CACHE' }, () => {
       msg.textContent = 'Cache cleared!';
       setTimeout(() => { msg.textContent = ''; }, 2000);
     });
   });
 
-  return el;
+  return panel;
 }
 
 function togglePanel(forceOpen) {
