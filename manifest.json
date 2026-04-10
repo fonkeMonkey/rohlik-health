@@ -4,7 +4,8 @@
   "version": "1.0.0",
   "description": "Adds Nutri-Score health ratings to every product on rohlik.cz",
   "permissions": [
-    "storage"
+    "storage",
+    "tabs"
   ],
   "host_permissions": [
     "*://*.rohlik.cz/*",
