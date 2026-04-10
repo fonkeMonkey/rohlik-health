@@ -18,6 +18,17 @@ const CATEGORY_SCORES = {
   'drogerie':'?','kosmetika':'?','domácnost':'?','zvíře':'?','lékárna':'?',
 };
 
+// Build diacritic-stripped aliases for CZ_EN at startup so lookups work
+// even if the product name has lost accents (e.g. "mleko" vs "mléko")
+function buildCzEnWithAliases(dict) {
+  const out = { ...dict };
+  for (const [k, v] of Object.entries(dict)) {
+    const stripped = stripDiacritics(k);
+    if (stripped !== k) out[stripped] = v;
+  }
+  return out;
+}
+
 // Noise words to strip from product names before searching
 const NOISE_WORDS = new Set([
   // Czech adjectives/descriptors
@@ -111,27 +122,31 @@ const CZ_EN = {
   'plnotučné':'whole fat','polotučné':'semi skimmed','odstředěné':'skimmed',
 };
 
+// Expand with diacritic-stripped aliases (e.g. "mleko" → "milk" as well as "mléko")
+const CZ_EN_FULL = buildCzEnWithAliases(CZ_EN);
+
 function stripDiacritics(str) {
   return str.normalize('NFD').replace(/[\u0300-\u036f]/g, '');
 }
 
 function cleanName(name) {
   return name
-    .replace(/\d+\s*(g|kg|ml|l|ks|cl|mg|%)\b/gi, '') // strip weights & %
-    .replace(/\b\d+\b/g, '')                            // strip standalone numbers
+    .replace(/\d+\s*(g|kg|ml|l|ks|cl|mg|%)/gi, '') // strip weights & %
+    .replace(/\s\d+\s/g, ' ')                        // strip standalone numbers
     .split(/\s+/)
-    .filter(w => w.length > 1 && !NOISE_WORDS.has(w.toLowerCase()))
+    .filter(w => {
+      if (w.length <= 1) return false;
+      const lower = w.toLowerCase();
+      return !NOISE_WORDS.has(lower) && !NOISE_WORDS.has(stripDiacritics(lower));
+    })
     .join(' ')
     .trim();
 }
 
 function translateToEnglish(name) {
-  let result = cleanName(name).toLowerCase();
-  for (const [cz, en] of Object.entries(CZ_EN)) {
-    result = result.replace(new RegExp(`\\b${stripDiacritics(cz)}\\b`, 'gi'), en);
-    result = result.replace(new RegExp(`\\b${cz}\\b`, 'gi'), en);
-  }
-  return result.replace(/\s+/g, ' ').trim();
+  // Token-based translation — avoids \b regex which breaks on Czech chars (non-ASCII \w)
+  const tokens = cleanName(name).toLowerCase().split(/\s+/);
+  return tokens.map(token => CZ_EN_FULL[token] || token).join(' ').trim();
 }
 
 // Returns [[searchTerm, lang], ...] from most to least specific
