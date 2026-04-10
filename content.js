@@ -221,7 +221,8 @@ function processCard(card) {
   imgContainer.style.position = 'relative';
   imgContainer.appendChild(loadingBadge);
 
-  chrome.runtime.sendMessage({ type: 'GET_RATING', productName: name }, (response) => {
+  const category = window.location.pathname; // e.g. /c300102000-ovoce-a-zelenina
+  chrome.runtime.sendMessage({ type: 'GET_RATING', productName: name, category }, (response) => {
     loadingBadge.remove();
     if (response) {
       injectBadge(card, response);
