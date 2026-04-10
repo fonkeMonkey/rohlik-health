@@ -307,7 +307,7 @@ function buildPanel() {
   const header = mk('div', 'rh-panel-header');
   const logo = mk('span', 'rh-panel-logo'); logo.textContent = 'H';
   const titleWrap = mk('div');
-  const titleEl = mk('div', 'rh-panel-title'); titleEl.textContent = 'RohlikHealth';
+  const titleEl = mk('div', 'rh-panel-title'); titleEl.textContent = 'Rohlik Score';
   const subEl   = mk('div', 'rh-panel-sub');   subEl.textContent   = 'Nutri-Score ratings';
   titleWrap.append(titleEl, subEl);
   const closeBtn = mk('button', 'rh-panel-close'); closeBtn.textContent = '✕';

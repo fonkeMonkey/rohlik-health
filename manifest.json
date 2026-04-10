@@ -1,6 +1,6 @@
 {
   "manifest_version": 3,
-  "name": "RohlikHealth",
+  "name": "Rohlik Score",
   "version": "1.0.0",
   "description": "Adds Nutri-Score health ratings to every product on rohlik.cz",
   "permissions": [
