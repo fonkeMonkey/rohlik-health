@@ -1,11 +1,18 @@
 /* RohlikHealth — Badge & Tooltip Styles */
 
+.rh-img-wrap {
+  position: relative;
+  display: inline-block;
+  line-height: 0; /* no gap below img */
+}
+
 .rh-badge {
   position: absolute;
   top: 6px;
   right: 6px;
   width: 30px;
   height: 30px;
+  pointer-events: auto;
   border-radius: 50%;
   display: flex;
   align-items: center;

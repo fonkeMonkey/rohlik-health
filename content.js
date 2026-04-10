@@ -95,21 +95,20 @@ function getProductName(card) {
 }
 
 function getImageContainer(card) {
-  // Find the div/element that wraps the product image — use as position:relative parent
   const img = card.querySelector('img');
-  if (img) {
-    // Walk up from img to find a block-level wrapper that isn't the card itself
-    let el = img.parentElement;
-    while (el && el !== card) {
-      const display = getComputedStyle(el).display;
-      if (display === 'block' || display === 'flex' || display === 'inline-block') {
-        return el;
-      }
-      el = el.parentElement;
-    }
-    return img.parentElement || card;
+  if (!img) return card;
+
+  // If already wrapped by us, reuse it
+  if (img.parentElement?.classList.contains('rh-img-wrap')) {
+    return img.parentElement;
   }
-  return trySelector(card, IMAGE_CONTAINER_SELECTORS) || card;
+
+  // Wrap img in a positioned div so badge always overlays the image precisely
+  const wrap = document.createElement('div');
+  wrap.className = 'rh-img-wrap';
+  img.parentElement.insertBefore(wrap, img);
+  wrap.appendChild(img);
+  return wrap;
 }
 
 function injectBadge(card, ratingData) {
