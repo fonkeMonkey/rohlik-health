@@ -35,12 +35,12 @@ const IMAGE_CONTAINER_SELECTORS = [
 
 let enabled = true;
 
-chrome.storage.sync.get('rohlikHealthEnabled', ({ rohlikHealthEnabled }) => {
+chrome.storage.local.get('rohlikHealthEnabled', ({ rohlikHealthEnabled }) => {
   enabled = rohlikHealthEnabled !== false;
 });
 
-chrome.storage.onChanged.addListener((changes) => {
-  if ('rohlikHealthEnabled' in changes) {
+chrome.storage.onChanged.addListener((changes, area) => {
+  if (area === 'local' && 'rohlikHealthEnabled' in changes) {
     enabled = changes.rohlikHealthEnabled.newValue !== false;
     if (!enabled) removeAllBadges();
     else processAll();
