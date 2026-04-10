@@ -446,6 +446,21 @@ function processQueue() {
   }
 }
 
+// On rohlik.cz: disable popup so onClicked fires → toggle in-page panel
+// On other pages: restore default popup
+function updateActionForTab(tab) {
+  if (!tab?.id || !tab?.url) return;
+  const isRohlik = tab.url.includes('rohlik.cz');
+  chrome.action.setPopup({ tabId: tab.id, popup: isRohlik ? '' : 'popup.html' });
+}
+
+chrome.tabs.onActivated.addListener(({ tabId }) => {
+  chrome.tabs.get(tabId, updateActionForTab);
+});
+chrome.tabs.onUpdated.addListener((_id, change, tab) => {
+  if (change.status === 'complete') updateActionForTab(tab);
+});
+
 chrome.action.onClicked.addListener((tab) => {
   if (tab.url?.includes('rohlik.cz')) {
     chrome.tabs.sendMessage(tab.id, { type: 'TOGGLE_PANEL' });
