@@ -3,7 +3,7 @@
 #rh-panel {
   all: initial;
   position: fixed !important;
-  top: 0 !important;
+  top: 80px !important;
   right: -260px !important;
   width: 240px !important;
   height: auto !important;
