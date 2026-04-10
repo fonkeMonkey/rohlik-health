@@ -4,34 +4,33 @@
 const PROCESSED_ATTR = 'data-rh-processed';
 const BADGE_CLASS = 'rh-badge';
 
-// Multiple selector strategies for rohlik.cz product cards
-// (site may update selectors; try each in order)
+// Selectors based on actual rohlik.cz DOM (Tailwind CSS, React SPA)
+// Product cards are <a> links with flex-wrap + gap-50 + href matching /{id}-{slug}
 const CARD_SELECTORS = [
-  '[data-test="productCard"]',
+  'a[class*="flex-wrap"][class*="gap-50"][href^="/"]',  // primary — confirmed from live DOM
+  'a[class*="flex-wrap"][class*="gap-100"][href^="/"]', // variant
+  '[data-test="productCard"]',                          // fallback if rohlik adds test ids
   '[class*="ProductCard"]',
-  '[class*="product-card"]',
-  'article[data-product-id]',
-  '[data-productid]',
-  'li[class*="ProductList"] > div',
 ];
 
+// Name element selectors — tried in order inside a card
+// Will be updated once inner card structure is confirmed
 const NAME_SELECTORS = [
-  '[data-test="productCardTitle"]',
-  '[class*="ProductCard__name"]',
-  '[class*="product-name"]',
-  '[class*="productName"]',
-  'h2[class*="name"]',
-  'h3[class*="name"]',
-  '.productName',
+  '[class*="name"]',
+  '[class*="title"]',
+  '[class*="Name"]',
+  '[class*="Title"]',
+  'h2', 'h3', 'h4',
+  'p[class*="text"]',
 ];
 
+// Image container — <a> card IS the positioning parent, img is inside
 const IMAGE_CONTAINER_SELECTORS = [
-  '[data-test="productCardImage"]',
-  '[class*="ProductCard__image"]',
-  '[class*="product-image"]',
-  '[class*="productImage"]',
-  'figure',
+  'div > img',         // first div containing img
+  '[class*="image"]',
   '[class*="Image"]',
+  'figure',
+  'picture',
 ];
 
 let enabled = true;
@@ -72,19 +71,44 @@ function findProductCards(root = document) {
 }
 
 function getProductName(card) {
+  // Try named selectors first
   const el = trySelector(card, NAME_SELECTORS);
-  if (el) return el.textContent.trim();
-
-  // Last resort: biggest heading inside card
-  const headings = card.querySelectorAll('h1, h2, h3, h4, a[href*="/"]');
-  for (const h of headings) {
-    const text = h.textContent.trim();
-    if (text.length > 2 && text.length < 120) return text;
+  if (el) {
+    const text = el.textContent.trim();
+    if (text.length > 2 && text.length < 150) return text;
   }
+
+  // Try any span/p that looks like a name (not a price — prices start with digits)
+  const spans = card.querySelectorAll('span, p, div');
+  for (const s of spans) {
+    if (s.children.length > 0) continue; // skip containers, want leaf text
+    const text = s.textContent.trim();
+    if (text.length > 4 && text.length < 120 && !/^\d/.test(text)) return text;
+  }
+
+  // Fallback: extract from href slug  e.g. /1349777-banan-1-ks → "banan 1 ks"
+  const href = card.getAttribute('href') || '';
+  const slugMatch = href.match(/^\/\d+-(.+)$/);
+  if (slugMatch) return slugMatch[1].replace(/-/g, ' ');
+
   return null;
 }
 
 function getImageContainer(card) {
+  // Find the div/element that wraps the product image — use as position:relative parent
+  const img = card.querySelector('img');
+  if (img) {
+    // Walk up from img to find a block-level wrapper that isn't the card itself
+    let el = img.parentElement;
+    while (el && el !== card) {
+      const display = getComputedStyle(el).display;
+      if (display === 'block' || display === 'flex' || display === 'inline-block') {
+        return el;
+      }
+      el = el.parentElement;
+    }
+    return img.parentElement || card;
+  }
   return trySelector(card, IMAGE_CONTAINER_SELECTORS) || card;
 }
 
