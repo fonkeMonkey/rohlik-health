@@ -35,7 +35,7 @@
     "96": "icons/icon-96.png"
   },
   "data_collection_permissions": {
-    "required": [],
+    "required": ["none"],
     "optional": []
   },
   "browser_specific_settings": {
