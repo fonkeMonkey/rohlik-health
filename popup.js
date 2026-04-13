@@ -5,17 +5,13 @@ const ratedCount = document.getElementById('rated-count');
 const clearBtn = document.getElementById('clearCache');
 const statusMsg = document.getElementById('status-msg');
 
-// Load toggle state — use local cache to avoid async delay on open
-const cachedEnabled = localStorage.getItem('rohlikHealthEnabled');
-if (cachedEnabled === 'false') toggle.checked = false;
+// Load toggle state from extension storage
+chrome.storage.local.get('rohlikHealthEnabled', ({ rohlikHealthEnabled }) => {
+  toggle.checked = rohlikHealthEnabled !== false;
+});
 
-// Sync local cache with extension storage (non-blocking)
+// Sync count from active tab (non-blocking)
 setTimeout(() => {
-  chrome.storage.local.get('rohlikHealthEnabled', ({ rohlikHealthEnabled }) => {
-    const enabled = rohlikHealthEnabled !== false;
-    toggle.checked = enabled;
-    localStorage.setItem('rohlikHealthEnabled', enabled);
-  });
 
   chrome.tabs.query({ active: true, currentWindow: true }, ([tab]) => {
     if (!tab?.url?.includes('rohlik.cz')) return;
@@ -27,9 +23,7 @@ setTimeout(() => {
 }, 50);
 
 toggle.addEventListener('change', () => {
-  const enabled = toggle.checked;
-  localStorage.setItem('rohlikHealthEnabled', enabled);
-  chrome.storage.local.set({ rohlikHealthEnabled: enabled });
+  chrome.storage.local.set({ rohlikHealthEnabled: toggle.checked });
 });
 
 clearBtn.addEventListener('click', () => {

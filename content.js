@@ -242,7 +242,9 @@ function processCard(card) {
   // Show loading badge
   const loadingBadge = document.createElement('div');
   loadingBadge.className = `${BADGE_CLASS} rh-loading`;
-  loadingBadge.innerHTML = '<span class="rh-spinner"></span>';
+  const spinner = document.createElement('span');
+  spinner.className = 'rh-spinner';
+  loadingBadge.appendChild(spinner);
   const imgContainer = getImageContainer(card);
   imgContainer.style.position = 'relative';
   imgContainer.appendChild(loadingBadge);
@@ -253,7 +255,6 @@ function processCard(card) {
     loadingBadge.remove();
     if (response) {
       injectBadge(card, response);
-      updatePopupCount();
     } else {
       card.removeAttribute(PROCESSED_ATTR);
     }
@@ -269,11 +270,6 @@ function removeAllBadges() {
   document.querySelectorAll(`[${PROCESSED_ATTR}]`).forEach(el => {
     el.removeAttribute(PROCESSED_ATTR);
   });
-}
-
-function updatePopupCount() {
-  const count = document.querySelectorAll(`[${PROCESSED_ATTR}="done"]`).length;
-  chrome.runtime.sendMessage({ type: 'PAGE_COUNT', count }).catch(() => {});
 }
 
 // Debounced MutationObserver

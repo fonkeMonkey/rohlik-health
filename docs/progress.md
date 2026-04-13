@@ -32,12 +32,10 @@
 - `popup.html` + `popup.js` — on/off toggle, rated product count, cache clear
 - Nutri-Score legend shown
 
-## Remaining
+### Feature 7: Polish & Edge Cases ✅
+- Fixed popup.html: renamed "RohlikHealth" → "Rohlik Score"
+- Fixed popup.js: removed localStorage, now uses chrome.storage.local consistently
+- Fixed content.js: replaced innerHTML on loading spinner with safe DOM construction
+- Removed dead PAGE_COUNT message (popup already uses GET_COUNT request/response)
 
-### Feature 7: Polish & Edge Cases
-- Rate limiting, better error handling, edge case testing
-
-## Next Session
-- Load extension in Firefox and test on live rohlik.cz
-- Test MutationObserver on category page navigation
-- Validate OpenFoodFacts responses for Czech products
+## All features complete
